@@ -1,0 +1,52 @@
+services:
+  test_redis:
+    container_name: test_redis
+    hostname: test_redis
+    extends:
+      file: templates.yml
+      service: base_redis
+    networks:
+      - test
+    ports:
+      - 6380:6379
+    profiles:
+      - test
+
+  test_postgres:
+    container_name: test_postgres
+    hostname: test_postgres
+    environment:
+      - POSTGRES_PASSWORD=postgres
+    extends:
+      file: templates.yml
+      service: base_postgres
+    networks:
+      - test
+    ports:
+      - 5433:5432
+    profiles:
+      - test
+
+  backend:
+    container_name: backend
+    hostname: backend
+    environment:
+      - DATABASE_DSN=postgresql+asyncpg://postgres:postgres@test_postgres:5432/test_db
+      - SECRET_JWT=jwt123
+      - REDIS_DSN=redis://test_redis:6379/0
+      - YANDEX_REDIRECT_URI=http://127.0.0.1:8000/api/v1/auth/yandex/callback
+    image: backend:latest
+    restart: always
+    extends:
+      file: templates.yml
+      service: base_container
+    ports:
+      - "127.0.0.1:8000:8000"
+    networks:
+      - test
+    profiles:
+      - production
+
+networks:
+  test:
+    driver: bridge
